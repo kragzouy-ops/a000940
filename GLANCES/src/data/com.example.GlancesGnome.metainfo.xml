@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+<id>com.example.GlancesGnome</id>
+<name>Glances</name>
+<summary>Moniteur système encapsulé en application GNOME</summary>
+<description>
+<p>Application GNOME qui embarque l’interface Web de Glances dans une fenêtre Adwaita.</p>
+</description>
+<launchable type="desktop-id">com.example.GlancesGnome.desktop</launchable>
+<provides>
+<binary>glances-gnome</binary>
+</provides>
+<categories>
+<category>System</category>
+<category>Utility</category>
+</categories>
+<developer_name>Vous</developer_name>
+<releases>
+<release version="0.1.0" date="2025-10-11"/>
+</releases>
+<content_rating type="oars-1.1"/>
+<metadata_license>CC0-1.0</metadata_license>
+<project_license>MIT</project_license>
+</component>

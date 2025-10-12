@@ -1,0 +1,28 @@
+Metadata-Version: 2.4
+Name: glances-gnome
+Version: 0.1.0
+Summary: Encapsule Glances dans une application GNOME/Adwaita
+Author: Vous
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: glances>=3.4
+Requires-Dist: requests
+Requires-Dist: psutil
+Requires-Dist: jinja2
+Requires-Dist: bottle
+
+# Glances GNOME
+
+
+Encapsule Glances dans une application GNOME/Adwaita (WebUI) avec une variante TUI.
+
+
+## Dépendances (dev système)
+- Linux (GNOME ≥ 44 recommandé)
+- PyGObject, GTK4, WebKitGTK, libadwaita (paquets distro, par ex. Debian/Ubuntu : `python3-gi gir1.2-gtk-4.0 gir1.2-webkit2-4.1 gir1.2-adw-1`)
+- Glances (`pipx install glances`) si vous lancez hors Flatpak
+
+
+## Démarrage rapide (dev)
+```bash
+make run

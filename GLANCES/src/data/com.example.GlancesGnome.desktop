@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Glances
+Comment=Moniteur système Glances empaqueté en application GNOME
+Exec=glances-gnome
+Icon=com.example.GlancesGnome
+Categories=System;Utility;Monitor;
+StartupNotify=true
+Terminal=false

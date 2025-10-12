@@ -1,0 +1,17 @@
+.
+├─ src/
+│  └─ glances_gnome/
+│     ├─ __init__.py
+│     ├─ __main__.py
+│     ├─ app.py          # Mode WebUI (WebKit)
+│     └─ app_tui.py      # Mode TUI (VTE)
+├─ data/
+│  ├─ com.example.GlancesGnome.desktop
+│  ├─ com.example.GlancesGnome.metainfo.xml
+│  └─ icons/
+│     └─ com.example.GlancesGnome.png  # placeholder (à remplacer)
+├─ flatpak/
+│  └─ com.example.GlancesGnome.yml
+├─ Makefile
+├─ pyproject.toml
+└─ README.md

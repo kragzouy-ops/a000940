@@ -1,0 +1,12 @@
+README.md
+pyproject.toml
+src/glances_gnome/__init__.py
+src/glances_gnome/__main__.py
+src/glances_gnome/app.py
+src/glances_gnome/app_tuy.py
+src/glances_gnome.egg-info/PKG-INFO
+src/glances_gnome.egg-info/SOURCES.txt
+src/glances_gnome.egg-info/dependency_links.txt
+src/glances_gnome.egg-info/entry_points.txt
+src/glances_gnome.egg-info/requires.txt
+src/glances_gnome.egg-info/top_level.txt

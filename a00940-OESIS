@@ -1,0 +1,32 @@
+## How to Enable USB Gadget on Mochabin
+
+To enable USB Gadget functionality on Mochabin:
+
+1. **Ensure Kernel Support**  
+    Verify that your Mochabin kernel is built with USB Gadget support (`CONFIG_USB_GADGET` and relevant gadget drivers).
+
+2. **Load Gadget Modules**  
+    Load the desired gadget module, for example:
+    ```sh
+    modprobe g_mass_storage   # For mass storage
+    modprobe g_ether          # For Ethernet over USB
+    modprobe g_serial         # For serial device
+    ```
+
+3. **Configure the Gadget**  
+    For mass storage:
+    ```sh
+    modprobe g_mass_storage file=/path/to/image.img
+    ```
+    For Ethernet:
+    ```sh
+    modprobe g_ether
+    ```
+
+4. **Connect to Host**  
+    Use a USB cable to connect Mochabin’s USB OTG port to your host system. The host should recognize the emulated device.
+
+5. **Automate at Boot (Optional)**  
+    Add the relevant `modprobe` commands to your startup scripts for automatic gadget initialization.
+
+Refer to the Mochabin documentation for advanced configuration and troubleshooting.

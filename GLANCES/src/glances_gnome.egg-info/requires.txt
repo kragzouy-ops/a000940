@@ -1,0 +1,5 @@
+glances>=3.4
+requests
+psutil
+jinja2
+bottle

@@ -1,0 +1,27 @@
+app-id: com.example.GlancesGnome
+runtime: org.gnome.Platform
+runtime-version: "46"
+sdk: org.gnome.Sdk
+command: glances-gnome
+finish-args:
+  # Accès réseau local pour joindre 127.0.0.1:61208
+  - --share=network
+modules:
+  - name: app
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 main.py /app/bin/glances-gnome
+      - install -Dm644 com.example.GlancesGnome.desktop /app/share/applications/com.example.GlancesGnome.desktop
+      - install -Dm644 com.example.GlancesGnome.png /app/share/icons/hicolor/512x512/apps/com.example.GlancesGnome.png
+    sources:
+      - type: file
+        path: main.py
+      - type: file
+        path: com.example.GlancesGnome.desktop
+      - type: file
+        path: com.example.GlancesGnome.png
+  - name: python3-deps
+    buildsystem: simple
+    build-commands:
+      - pip3 install --no-cache-dir --prefix=/app glances bottle jinja2 psutil requests
+

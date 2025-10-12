@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "glances-gnome"
+version = "0.1.0"
+description = "Encapsule Glances dans une application GNOME/Adwaita"
+readme = "README.md"
+authors = [{ name = "Vous" }]
+requires-python = ">=3.10"
+# Ne pas forcer PyGObject via pip (souvent fourni par le système)
+dependencies = [
+"glances>=3.4", # côté dev; en Flatpak on l’épingle module python3-deps
+"requests",
+"psutil",
+"jinja2",
+"bottle",
+]
+
+
+[project.scripts]
+# Point d’entrée CLI
+"glances-gnome" = "glances_gnome.__main__:main"
+
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+
+[tool.setuptools.packages.find]
+where = ["src"]
