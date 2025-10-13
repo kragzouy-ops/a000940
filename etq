@@ -1,0 +1,53 @@
+[33mcommit fd2fe3f1380bf037a67494b7e81e525d9ab97f73[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mdevel[m[33m)[m
+Author: Gerald KERMA <kragzouy@gmail.com>
+Date:   Mon Oct 13 17:51:21 2025 +0200
+
+    ko
+
+[33mcommit 5b6a04cec7d6c181090ebac9b89c7fe9add19a99[m[33m ([m[1;31morigin/devel[m[33m)[m
+Author: Gerald KERMA <kragzouy@gmail.com>
+Date:   Mon Oct 13 16:35:27 2025 +0200
+
+    colsole-ui broken
+
+[33mcommit 9160ac867ff22698c1f83e824304f44e54ebd167[m
+Author: Gerald KERMA <kragzouy@gmail.com>
+Date:   Mon Oct 13 16:11:07 2025 +0200
+
+    RIGHT 0001DEA
+
+[33mcommit f4667835ceacdca59e49b618479f80f408defe4a[m
+Author: Gerald KERMA <kragzouy@gmail.com>
+Date:   Mon Oct 13 13:20:34 2025 +0200
+
+    V UI
+
+[33mcommit d81a9a58384f4665f949fafc7f77c9f43c77e2d5[m
+Author: Gerald KERMA <kragzouy@gmail.com>
+Date:   Mon Oct 13 13:12:02 2025 +0200
+
+    ADD MOCCHATOOL v0001
+
+[33mcommit 96c353d9b51bf1f127777ee65dd352d3db11c1ac[m
+Author: Gerald KERMA <kragzouy@gmail.com>
+Date:   Sun Oct 12 15:44:20 2025 +0200
+
+    Add GlancesGnome application and related files
+    
+    - Created a Flatpak manifest for the GlancesGnome application.
+    - Added desktop entry and icon for the application.
+    - Implemented main application logic in main.py to launch Glances in a web view.
+    - Developed a terminal user interface (TUI) for Glances using Gtk and Vte.
+    - Included Python dependencies installation in the Flatpak build process.
+    - Added scripts for local installation and desktop integration.
+    - Introduced a new animation script for visualizing the lemniscate of Bernoulli with Hamiltonian cycles.
+    - Created a Streamlit app for interactive visualization of Hamiltonian cycles on the lemniscate.
+    - Added multiple video files demonstrating the lemniscate animation.
+    
+    TESTs
+
+[33mcommit 3b36602272ea56ca11bd0b1d8cfd5b489da5d7a5[m[33m ([m[1;31morigin/master[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m
+Author: REEPOST <reepost@pop-os.lan>
+Date:   Sun Oct 5 08:40:14 2025 +0200
+
+    first commit

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+<<<<<<< HEAD
 # -*- coding: utf-8 -*-
 
 # --- Preinit: venv check, requirements install, and self-restart ---
@@ -373,6 +374,133 @@ def cmd_menu():
             return
 
 
+=======
+##FIRST RETRYBORNABLE
+
+from rich.console import Console
+from rich.layout import Layout
+from rich.panel import Panel
+from rich.align import Align
+from rich.text import Text
+from rich.live import Live
+from rich.prompt import Prompt
+import subprocess
+import sys
+import os
+import typer
+import pexpect
+import shlex
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.table import Table
+from rich.syntax import Syntax
+from io import StringIO
+import serial
+from pathlib import Path
+import time
+from typing import Optional
+
+# Default U-Boot prompt and timeout
+DEFAULT_PROMPT = r"=> |# |Marvell>> "
+DEFAULT_TIMEOUT = 5
+
+# Console instance for Rich output
+console = Console()
+
+# Default serial port and baud rate
+DEFAULT_PORT = "/dev/ttyUSB0"
+DEFAULT_BAUD = 115200
+
+# Global Typer app for CLI
+app = typer.Typer(help="MOCHAbin serial / U-Boot CLI.")
+
+# --- Interactive Console UI Command ---
+@app.command("console-ui")
+def cmd_console_ui():
+    """Interactive Rich UI: menu (top), output (middle), status (bottom)."""
+    # Build command list from Typer app
+    command_list = []
+    for cmd in app.registered_commands:
+        name = cmd.name
+        if name not in ("console-ui", "help"):
+            desc = cmd.help or ""
+            command_list.append((name, desc))
+    command_list.append(("Exit", "Exit the UI"))
+
+    def draw_menu(selected_idx):
+        menu = "\n".join([
+            f"[bold green]> {name}[/bold green] - {desc}" if i == selected_idx else f"  {name} - {desc}"
+            for i, (name, desc) in enumerate(command_list)
+        ])
+        return Panel(menu, title="[b]MOCHAbin Tool Menu", border_style="blue")
+
+    def draw_status(status_text):
+        return Panel(status_text, style="bold white on blue", title="Status", border_style="blue")
+
+    selected_idx = 0
+    output_text = ""
+    status_text = "[dim]Ready. Use up/down/enter. Q to quit.[/dim]"
+
+    with Live(console=console, refresh_per_second=10) as live:
+        while True:
+            layout = Layout()
+            layout.split_column(
+                Layout(draw_menu(selected_idx), name="menu", size=10),
+                Layout(Panel(Align.left(Text.from_ansi(output_text)), title="Output", border_style="magenta"), name="output"),
+                Layout(draw_status(status_text), name="status", size=3)
+            )
+            live.update(layout)
+            key = Prompt.ask("[b]Select: [up/down/enter/q]", default="enter")
+            if key.lower() in ("up", "k"):
+                selected_idx = (selected_idx - 1) % len(command_list)
+                status_text = f"[dim]Selected: {command_list[selected_idx][0]}[/dim]"
+            elif key.lower() in ("down", "j"):
+                selected_idx = (selected_idx + 1) % len(command_list)
+                status_text = f"[dim]Selected: {command_list[selected_idx][0]}[/dim]"
+            elif key.lower() in ("q", "quit"):
+                status_text = "[yellow]Exiting...[/yellow]"
+                live.update(layout)
+                break
+            elif key.lower() in ("enter", ""):
+                name, _ = command_list[selected_idx]
+                if name == "Exit":
+                    status_text = "[yellow]Exiting...[/yellow]"
+                    live.update(layout)
+                    break
+                # Prompt for arguments if needed
+                cmd_obj = None
+                for c in app.registered_commands:
+                    if c.name == name:
+                        cmd_obj = c
+                        break
+                params = []
+                for param in (cmd_obj.params if cmd_obj else []):
+                    if param.name in ("ctx", "self"):
+                        continue
+                    prompt_text = f"{param.name} ({param.help or param.type})"
+                    default = param.default if param.default is not None else ""
+                    value = Prompt.ask(prompt_text, default=str(default))
+                    params.append(value)
+                cmd = [sys.executable, os.path.abspath(__file__), name] + params
+                try:
+                    status_text = f"[cyan]Running: {name} {' '.join(params)}[/cyan]"
+                    live.update(layout)
+                    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                    output_lines = []
+                    for line in proc.stdout:
+                        output_lines.append(line)
+                        output_text = "".join(output_lines)
+                        layout["output"].update(Panel(Align.left(Text.from_ansi(output_text)), title="Output", border_style="magenta"))
+                        status_text = f"[cyan]Running: {name} ({len(output_lines)} lines)...[/cyan]"
+                        layout["status"].update(draw_status(status_text))
+                        live.update(layout)
+                    proc.wait()
+                    status_text = f"[green]Done: {name}[/green]"
+                except Exception as e:
+                    output_text = f"[red]Error: {e}[/red]"
+                    status_text = f"[red]Error running {name}: {e}[/red]"
+            else:
+                status_text = "[yellow]Unknown key. Use up/down/enter/q.[/yellow]"
+>>>>>>> 97d18a6 (stillko)
 
 # ---------- Help / Cheatsheet ----------
 
