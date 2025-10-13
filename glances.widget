@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+import gi, os, sys, shutil
+gi.require_version("Gtk", "4.0")
+gi.require_version("Vte", "2.91")
+from gi.repository import Gtk, Vte, GLib
+
+class GlancesTUI(Gtk.Application):
+    def __init__(self):
+        super().__init__(application_id="com.example.GlancesVTE")
+        self.term = None
+
+    def do_activate(self):
+        win = Gtk.ApplicationWindow(application=self, title="Glances (TUI)")
+        win.set_default_size(1000, 700)
+        self.term = Vte.Terminal()
+        win.set_child(self.term)
+        win.present()
+
+        glances = shutil.which("glances") or "glances"
+        # Lance glances dans le terminal intégré
+        self.term.spawn_async(
+            Vte.PtyFlags.DEFAULT,
+            os.environ.get("HOME", "/"),
+            ["/usr/bin/env", "bash", "-lc", f"{glances}"],
+            [],
+            GLib.SpawnFlags.SEARCH_PATH,
+            None,
+            None,
+            -1,
+            None,
+            None
+        )
+
+app = GlancesTUI()
+app.run(sys.argv)
+
