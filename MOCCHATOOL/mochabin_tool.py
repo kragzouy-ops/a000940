@@ -23,7 +23,49 @@ Notes:
   - *HTTP boot path depends on your U-Boot/EFi support; TFTP is primary here.
 """
 
+
 from __future__ import annotations
+
+# --- Pre-init: Ensure venv and prerequisites ---
+import sys, os
+def _ensure_env_ready():
+    if os.environ.get("MOCHABIN_ENV_READY") == "1":
+        return
+    import importlib.util
+    import subprocess
+    required = ["typer", "serial", "pexpect", "rich"]
+    missing = [pkg for pkg in required if importlib.util.find_spec(pkg) is None]
+    venv = os.environ.get("VIRTUAL_ENV")
+    if missing or not venv:
+        print("\033[93m[WARN] Python venv not active or missing packages: %s\033[0m" % (', '.join(missing) if missing else ''))
+        # Inline env-setup.sh logic
+        py = os.environ.get("PYTHON_VERSION", "3.10")
+        venv_dir = ".venv"
+        # Find python version
+        python_bin = shutil.which(f"python{py}") or shutil.which("python3")
+        if not python_bin:
+            print(f"[ERROR] python{py} not found. Please install Python {py}.")
+            sys.exit(1)
+        if not os.path.isdir(venv_dir):
+            print(f"[INFO] Creating virtual environment with {python_bin}...")
+            subprocess.check_call([python_bin, "-m", "venv", venv_dir])
+        # Activate venv
+        activate = os.path.join(venv_dir, "bin", "activate_this.py")
+        if os.path.exists(activate):
+            exec(open(activate).read(), dict(__file__=activate))
+        else:
+            activate = os.path.join(venv_dir, "bin", "activate")
+            if os.path.exists(activate):
+                print(f"[INFO] Please run: source {activate}")
+                sys.exit(1)
+        # Upgrade pip and install requirements
+        subprocess.check_call([os.path.join(venv_dir, "bin", "python"), "-m", "pip", "install", "--upgrade", "pip"])
+        subprocess.check_call([os.path.join(venv_dir, "bin", "python"), "-m", "pip", "install", "typer[all]", "pyserial", "pexpect", "rich"])
+    print("[INFO] Environment ready. Restarting tool...\n")
+    os.environ["MOCHABIN_ENV_READY"] = "1"
+    os.execve(sys.executable, [sys.executable] + sys.argv, os.environ)
+import shutil
+_ensure_env_ready()
 
 import os
 import sys
@@ -74,11 +116,19 @@ def cmd_console_ui():
         ("help", "Show this cheatsheet of commands and examples."),
     ]
     layout = Layout()
+    output_height = 10
+    console_height = 5
     layout.split_column(
         Layout(name="menu", size=12),
-        Layout(name="output")
+        Layout(name="output", size=output_height),
+        Layout(name="console", size=console_height),
+        Layout(name="status", size=1)
     )
-    output_text = Text("[dim]Command output will appear here.[/dim]")
+    output_buffers = [["[dim]Command output will appear here.[/dim]"]]
+    output_scrolls = [0]
+    output_idx = 0
+    console_text = Text.from_markup("[dim]Interactive console will appear here when supported.[/dim]")
+    status_text = Text.from_markup("")
     def render_menu(selected_idx):
         menu_panel = Panel(
             Align.left(
@@ -88,7 +138,7 @@ def cmd_console_ui():
                 ]),
                 vertical="top"
             ),
-            title="[cyan]Select a Command (Up/Down, Enter, q to quit)",
+            title="[cyan]Select a Command (Up/Down, Enter, +/-, q to quit)",
             border_style="cyan"
         )
         return menu_panel
@@ -97,7 +147,35 @@ def cmd_console_ui():
     with Live(layout, refresh_per_second=10, screen=True):
         while True:
             layout["menu"].update(render_menu(selected))
-            layout["output"].update(Panel(output_text, title="Output", border_style="magenta"))
+            # Output panel with vertical slider
+            # Per-command output buffer and slider
+            output_lines = []
+            if output_buffers:
+                for line in output_buffers[output_idx]:
+                    output_lines.extend(line.splitlines() or [""])
+            visible_lines = layout["output"].size - 2  # account for panel border
+            max_scroll = max(0, len(output_lines) - visible_lines)
+            output_scrolls[output_idx] = min(output_scrolls[output_idx], max_scroll)
+            output_scrolls[output_idx] = max(0, output_scrolls[output_idx])
+            shown = output_lines[output_scrolls[output_idx]:output_scrolls[output_idx]+visible_lines]
+            slider_height = visible_lines
+            slider_pos = int((output_scrolls[output_idx] / max(1, max_scroll)) * (slider_height-1)) if max_scroll else 0
+            slider = ["│" for _ in range(slider_height)]
+            if slider:
+                slider[slider_pos] = "█"
+            slider_text = "\n".join(slider)
+            from rich.columns import Columns
+            output_panel = Panel(
+                Columns([
+                    Text.from_ansi("\n".join(shown)),
+                    Text(slider_text, style="bright_black")
+                ], equal=True, expand=True),
+                title=f"Output [{output_idx+1}/{len(output_buffers)}] ([/]: prev/next)",
+                border_style="magenta"
+            )
+            layout["output"].update(output_panel)
+            layout["console"].update(Panel(console_text, title="Console", border_style="blue"))
+            layout["status"].update(status_text)
             fd = sys.stdin.fileno()
             old_settings = termios.tcgetattr(fd)
             try:
@@ -111,17 +189,37 @@ def cmd_console_ui():
                             selected = (selected - 1) % len(commands)
                         elif seq == "[B":  # Down
                             selected = (selected + 1) % len(commands)
-                    elif ch == "\n":  # Enter
+                    elif ch == '+':
+                        output_height += 1
+                        layout["output"].size = output_height
+                    elif ch == '-':
+                        if output_height > 3:
+                            output_height -= 1
+                            layout["output"].size = output_height
+                    elif ch == '[':
+                        if output_idx > 0:
+                            output_idx -= 1
+                    elif ch == ']':
+                        if output_idx < len(output_buffers) - 1:
+                            output_idx += 1
+                    elif ch == '\u001b[5~':  # PageUp
+                        output_scrolls[output_idx] = max(0, output_scrolls[output_idx] - visible_lines)
+                    elif ch == '\u001b[6~':  # PageDown
+                        output_scrolls[output_idx] = min(max_scroll, output_scrolls[output_idx] + visible_lines)
+                    elif ch == '\n':  # Enter
                         cmd_name = commands[selected][0]
                         args = []
                         if cmd_name == "console":
                             port = Prompt.ask("Serial port", default=DEFAULT_PORT)
-                            args = ["--port", port]
+                            import os
+                            os.execvp(sys.executable, [sys.executable, sys.argv[0], "console", "--port", port])
                         elif cmd_name == "log":
-                            port = Prompt.ask("Serial port", default=DEFAULT_PORT)
-                            outfile = Prompt.ask("Output log file", default="mochabin.log")
-                            seconds = Prompt.ask("Seconds to capture (0=forever)", default="0")
-                            args = ["--port", port, "--outfile", outfile, "--seconds", seconds]
+                            output_buffers.append(["[yellow]The 'log' command is interactive. Please run it directly in your terminal.[/yellow]"])
+                            output_scrolls.append(0)
+                            output_idx = len(output_buffers) - 1
+                            console_text = Text.from_markup("[bold blue]Interactive console panel reserved. (Not implemented in UI)[/bold blue]")
+                            status_text = Text.from_markup("[bold yellow]Interactive command. Not supported in UI.[/bold yellow]")
+                            continue
                         elif cmd_name == "break":
                             port = Prompt.ask("Serial port", default=DEFAULT_PORT)
                             args = ["--port", port]
@@ -145,12 +243,16 @@ def cmd_console_ui():
                         try:
                             with redirect_stdout(output), redirect_stderr(output):
                                 app([cmd_name] + args, standalone_mode=False)
+                            status_text = Text.from_markup("[green]Command completed successfully.[/green]")
                         except SystemExit:
-                            pass
+                            status_text = Text.from_markup("[green]Command exited.[/green]")
                         except Exception as e:
                             output.write(f"[ERROR] {e}\n")
-                        output_text.clear()
-                        output_text.append(Text.from_ansi(output.getvalue()))
+                            status_text = Text.from_markup(f"[bold red]Error: {e}[/bold red]")
+                        output_buffers.append([output.getvalue()])
+                        output_scrolls.append(0)
+                        output_idx = len(output_buffers) - 1
+                        console_text = Text.from_markup("[dim]Interactive console will appear here when supported.[/dim]")
                     elif ch.lower() == 'q':
                         break
             finally:
@@ -422,7 +524,7 @@ def human_sleep(sec: float) -> None:
 @app.command("list-ports")
 def cmd_list_ports() -> None:
     """List available serial ports."""
-    ports = find_ports()
+    ports = [p for p in find_ports() if getattr(p, 'device', None)]
     if not ports:
         console.print("[red]No serial ports found.[/red]")
         raise typer.Exit(1)
@@ -460,6 +562,7 @@ def cmd_console(
     pref_hint = f", prefix: {prefix_key} (x/q=exit, a=send, b=BREAK, h=help)" if pref_code is not None else ", prefix: disabled"
     console.print(f"[bold green]Connected[/bold green] to {port} @ {baud}  (exit: {pretty_keys}{pref_hint})")
     console.print("[dim]Tip: press Enter a couple times to surface the prompt[/dim]")
+    console.print("[dim]Ctrl-D (EOF) will disconnect and exit the console.[/dim]")
     console.print()
 
     logfile = None
