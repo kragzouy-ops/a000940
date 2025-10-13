@@ -1,4 +1,4 @@
-#!/home/reepost/DEVEL/CODEX/MOCCHATOOL/.venv/bin/python
+#!/home/reepost/DEVEL/CODEX/MOCCHATOOL/.venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

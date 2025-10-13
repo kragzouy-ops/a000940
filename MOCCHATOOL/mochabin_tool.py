@@ -1,110 +1,131 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-MOCHAbin Serial/U-Boot Helper
---------------------------------
-A Swiss-army CLI to:
-  • open a serial console (USB debug) with logging
-  • configurable exit keys + prefix-escape (screen/tmux style)
-  • break into U-Boot
-  • run U-Boot scripts/recipes
-  • kwboot a temporary U-Boot over UART
-  • flash/upgrade U-Boot (bubt or manual SPI flow)
-  • netboot Debian installer (TFTP/HTTP*)
-  • basic env/debug helpers
 
-Requirements:
-  pip install typer[all] pyserial pexpect rich
-
-Notes:
-  - Default serial: /dev/ttyUSB0 @ 115200 8N1
-  - Works best on Linux. On macOS, use /dev/tty.usbserial-*
-  - For kwboot, ensure kwboot is installed and in PATH.
-  - *HTTP boot path depends on your U-Boot/EFi support; TFTP is primary here.
-"""
-
-
-from __future__ import annotations
-
-# --- Pre-init: Ensure venv and prerequisites ---
-import sys, os
-def _ensure_env_ready():
-    if os.environ.get("MOCHABIN_ENV_READY") == "1":
-        return
-    import importlib.util
+# --- Preinit: venv check, requirements install, and self-restart ---
+def _preinit():
     import subprocess
-    required = ["typer", "serial", "pexpect", "rich"]
-    missing = [pkg for pkg in required if importlib.util.find_spec(pkg) is None]
-    venv = os.environ.get("VIRTUAL_ENV")
-    if missing or not venv:
-        print("\033[93m[WARN] Python venv not active or missing packages: %s\033[0m" % (', '.join(missing) if missing else ''))
-        # Inline env-setup.sh logic
-        py = os.environ.get("PYTHON_VERSION", "3.10")
-        venv_dir = ".venv"
-        # Find python version
-        python_bin = shutil.which(f"python{py}") or shutil.which("python3")
-        if not python_bin:
-            print(f"[ERROR] python{py} not found. Please install Python {py}.")
-            sys.exit(1)
-        if not os.path.isdir(venv_dir):
-            print(f"[INFO] Creating virtual environment with {python_bin}...")
-            subprocess.check_call([python_bin, "-m", "venv", venv_dir])
-        # Activate venv
-        activate = os.path.join(venv_dir, "bin", "activate_this.py")
-        if os.path.exists(activate):
-            exec(open(activate).read(), dict(__file__=activate))
-        else:
-            activate = os.path.join(venv_dir, "bin", "activate")
-            if os.path.exists(activate):
-                print(f"[INFO] Please run: source {activate}")
-                sys.exit(1)
-        # Upgrade pip and install requirements
-        subprocess.check_call([os.path.join(venv_dir, "bin", "python"), "-m", "pip", "install", "--upgrade", "pip"])
-        subprocess.check_call([os.path.join(venv_dir, "bin", "python"), "-m", "pip", "install", "typer[all]", "pyserial", "pexpect", "rich"])
-    print("[INFO] Environment ready. Restarting tool...\n")
-    os.environ["MOCHABIN_ENV_READY"] = "1"
-    os.execve(sys.executable, [sys.executable] + sys.argv, os.environ)
-import shutil
-_ensure_env_ready()
+    import shutil
+    import pathlib
+    import sys
+    import os
+    VENV_PATH = os.path.join(os.path.dirname(__file__), '.venv')
+    REQUIREMENTS = ['typer[all]', 'rich', 'pyserial', 'pexpect']
+    REDUNDANCY_ENV = 'MOCHABIN_TOOL_BOOTSTRAPPED'
+    # Only run if not already bootstrapped
+    if os.environ.get(REDUNDANCY_ENV) == '1':
+        return
+    # Check if running inside venv
+    in_venv = sys.prefix != sys.base_prefix or hasattr(sys, 'real_prefix')
+    if not in_venv:
+        # Create venv if missing
+        if not os.path.isdir(VENV_PATH):
+            subprocess.check_call([sys.executable, '-m', 'venv', VENV_PATH])
+        # Re-exec inside venv
+        pybin = os.path.join(VENV_PATH, 'bin', 'python')
+        os.environ[REDUNDANCY_ENV] = '1'
+        os.execv(pybin, [pybin] + sys.argv)
+    # In venv: check requirements
+    try:
+        import typer, rich, serial, pexpect
+    except ImportError:
+        # Install requirements
+        pip = sys.executable
+        subprocess.check_call([pip, '-m', 'pip', 'install'] + REQUIREMENTS)
+        # Re-exec to reload modules
+        os.environ[REDUNDANCY_ENV] = '1'
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+
+# Only run preinit if not imported as a module
+if __name__ == "__main__":
+    _preinit()
+
+
+# --- Preinit: venv check, requirements install, and self-restart ---
+def _preinit():
+    import subprocess
+    import shutil
+    import pathlib
+    import sys
+    import os
+    VENV_PATH = os.path.join(os.path.dirname(__file__), '.venv')
+    REQUIREMENTS = ['typer[all]', 'rich', 'pyserial', 'pexpect']
+    REDUNDANCY_ENV = 'MOCHABIN_TOOL_BOOTSTRAPPED'
+    # Only run if not already bootstrapped
+    if os.environ.get(REDUNDANCY_ENV) == '1':
+        return
+    # Check if running inside venv
+    in_venv = sys.prefix != sys.base_prefix or hasattr(sys, 'real_prefix')
+    if not in_venv:
+        # Create venv if missing
+        if not os.path.isdir(VENV_PATH):
+            subprocess.check_call([sys.executable, '-m', 'venv', VENV_PATH])
+        # Re-exec inside venv
+        pybin = os.path.join(VENV_PATH, 'bin', 'python')
+        os.environ[REDUNDANCY_ENV] = '1'
+        os.execv(pybin, [pybin] + sys.argv)
+    # In venv: check requirements
+    try:
+        import typer, rich, serial, pexpect
+    except ImportError:
+        # Install requirements
+        pip = sys.executable
+        subprocess.check_call([pip, '-m', 'pip', 'install'] + REQUIREMENTS)
+        # Re-exec to reload modules
+        os.environ[REDUNDANCY_ENV] = '1'
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+
+# Only run preinit if not imported as a module
+if __name__ == "__main__":
+    _preinit()
 
 import os
 import sys
-import time
-import shlex
-import subprocess
-from pathlib import Path
-from typing import Optional, List, Tuple, Iterable, Set
-
 import typer
 from rich.console import Console
-from rich.table import Table
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.text import Text
 from rich.panel import Panel
-from rich.syntax import Syntax
+from rich.align import Align
 from rich.live import Live
 from rich.prompt import Prompt
-from rich.text import Text
-from io import StringIO
-import serial
-from serial.tools import list_ports
-import pexpect.fdpexpect as fdpexpect
 from rich.layout import Layout
-from rich.live import Live
-from rich.align import Align
+from rich.columns import Columns
+import sys
+import subprocess
+from io import StringIO
+from rich.table import Table
+from rich.syntax import Syntax
+import os
+import shlex
+try:
+    import serial
+    import serial.tools.list_ports
+    import serial.tools.list_ports_common
+except ImportError:
+    serial = None
 
-app = typer.Typer(add_completion=False, help="MOCHAbin serial / U-Boot CLI")
-console = Console()
+DEFAULT_PROMPT = r"=> "
+DEFAULT_TIMEOUT = 7
 
-DEFAULT_BAUD = 115200
-DEFAULT_PROMPT = r"(U-Boot>|\=\>|# )"
-DEFAULT_TIMEOUT = 30
+import time
+from typing import Optional, Iterable
+from pathlib import Path
+from rich.progress import Progress, SpinnerColumn, TextColumn
+try:
+    import fdpexpect
+except ImportError:
+    fdpexpect = None
+
+# Define or import these if not already present
 DEFAULT_PORT = "/dev/ttyUSB0"
-CR = "\r"
-# ---------- Interactive Console UI ----------
+DEFAULT_BAUD = 115200
+
+app = typer.Typer()
+console = Console()
 
 @app.command("console-ui")
 def cmd_console_ui():
     """Interactive console UI: select commands and view output in a split-pane display."""
+
     commands = [
         ("list-ports", "List available serial devices."),
         ("console", "Interactive serial console with logging, exit keys, and prefix-escape."),
@@ -115,9 +136,9 @@ def cmd_console_ui():
         ("doctor", "Environment checks (permissions, kwboot in PATH, ports)."),
         ("help", "Show this cheatsheet of commands and examples."),
     ]
-    layout = Layout()
     output_height = 10
     console_height = 5
+    layout = Layout()
     layout.split_column(
         Layout(name="menu", size=12),
         Layout(name="output", size=output_height),
@@ -129,7 +150,12 @@ def cmd_console_ui():
     output_idx = 0
     console_text = Text.from_markup("[dim]Interactive console will appear here when supported.[/dim]")
     status_text = Text.from_markup("")
+    menu_conn_info = {"info": None}
+
     def render_menu(selected_idx):
+        title = "[cyan]Select a Command (Up/Down, Enter, +/-, q to quit)"
+        if menu_conn_info["info"]:
+            title = f"[green]{menu_conn_info['info']}[/green]"
         menu_panel = Panel(
             Align.left(
                 "\n".join([
@@ -138,22 +164,21 @@ def cmd_console_ui():
                 ]),
                 vertical="top"
             ),
-            title="[cyan]Select a Command (Up/Down, Enter, +/-, q to quit)",
+            title=title,
             border_style="cyan"
         )
         return menu_panel
+
     import sys, termios, tty, select
     selected = 0
-    with Live(layout, refresh_per_second=10, screen=True):
+    with Live(layout, refresh_per_second=10, screen=True) as live:
         while True:
             layout["menu"].update(render_menu(selected))
-            # Output panel with vertical slider
-            # Per-command output buffer and slider
             output_lines = []
             if output_buffers:
                 for line in output_buffers[output_idx]:
                     output_lines.extend(line.splitlines() or [""])
-            visible_lines = layout["output"].size - 2  # account for panel border
+            visible_lines = layout["output"].size - 2
             max_scroll = max(0, len(output_lines) - visible_lines)
             output_scrolls[output_idx] = min(output_scrolls[output_idx], max_scroll)
             output_scrolls[output_idx] = max(0, output_scrolls[output_idx])
@@ -164,7 +189,6 @@ def cmd_console_ui():
             if slider:
                 slider[slider_pos] = "█"
             slider_text = "\n".join(slider)
-            from rich.columns import Columns
             output_panel = Panel(
                 Columns([
                     Text.from_ansi("\n".join(shown)),
@@ -176,6 +200,7 @@ def cmd_console_ui():
             layout["output"].update(output_panel)
             layout["console"].update(Panel(console_text, title="Console", border_style="blue"))
             layout["status"].update(status_text)
+            live.update(layout)
             fd = sys.stdin.fileno()
             old_settings = termios.tcgetattr(fd)
             try:
@@ -183,11 +208,11 @@ def cmd_console_ui():
                 rlist, _, _ = select.select([fd], [], [], 0.2)
                 if rlist:
                     ch = sys.stdin.read(1)
-                    if ch == "\x1b":  # Escape sequence
+                    if ch == "\x1b":
                         seq = sys.stdin.read(2)
-                        if seq == "[A":  # Up
+                        if seq == "[A":
                             selected = (selected - 1) % len(commands)
-                        elif seq == "[B":  # Down
+                        elif seq == "[B":
                             selected = (selected + 1) % len(commands)
                     elif ch == '+':
                         output_height += 1
@@ -202,17 +227,29 @@ def cmd_console_ui():
                     elif ch == ']':
                         if output_idx < len(output_buffers) - 1:
                             output_idx += 1
-                    elif ch == '\u001b[5~':  # PageUp
+                    elif ch == '\u001b[5~':
                         output_scrolls[output_idx] = max(0, output_scrolls[output_idx] - visible_lines)
-                    elif ch == '\u001b[6~':  # PageDown
+                    elif ch == '\u001b[6~':
                         output_scrolls[output_idx] = min(max_scroll, output_scrolls[output_idx] + visible_lines)
-                    elif ch == '\n':  # Enter
+                    elif ch == '\n':
                         cmd_name = commands[selected][0]
                         args = []
                         if cmd_name == "console":
                             port = Prompt.ask("Serial port", default=DEFAULT_PORT)
-                            import os
-                            os.execvp(sys.executable, [sys.executable, sys.argv[0], "console", "--port", port])
+                            baud = DEFAULT_BAUD
+                            exit_keys = ["ctrl-]", "ctrl-q", "ctrl-x"]
+                            prefix_key = "ctrl-a"
+                            pref_hint = f"prefix: {prefix_key} (x/q=exit, a=send, b=BREAK, h=help)"
+                            conn_info = f"Connected to {port} @ {baud}  (exit: {', '.join(exit_keys)}, {pref_hint})"
+                            menu_conn_info["info"] = conn_info
+                            import subprocess
+                            layout["status"].update(Text.from_markup("[yellow]Launching interactive console... (exit to return to menu)[/yellow]"))
+                            live.update(layout)
+                            try:
+                                subprocess.run([sys.executable, sys.argv[0], "console", "--port", port])
+                            except Exception as e:
+                                status_text = Text.from_markup(f"[bold red]Error launching console: {e}[/bold red]")
+                            continue
                         elif cmd_name == "log":
                             output_buffers.append(["[yellow]The 'log' command is interactive. Please run it directly in your terminal.[/yellow]"])
                             output_scrolls.append(0)
@@ -236,7 +273,6 @@ def cmd_console_ui():
                             args = ["--port", port, "--image", image]
                             if extra.strip():
                                 args += ["--extra", extra]
-                        # doctor, list-ports, help need no args
                         from io import StringIO
                         from contextlib import redirect_stdout, redirect_stderr
                         output = StringIO()
@@ -266,6 +302,7 @@ def cmd_menu():
     commands = [
         ("list-ports", "List available serial devices."),
         ("console", "Interactive serial console with logging, exit keys, and prefix-escape."),
+        ("console-ui", "Interactive split-pane UI for command selection and output."),
         ("log", "Non-interactive capture of serial output to a file."),
         ("break", "Spam CR to stop autoboot and land at U-Boot prompt."),
         ("run", "Run a U-Boot script or built-in recipe (flash/netboot/env/reset)."),
@@ -293,6 +330,10 @@ def cmd_menu():
             if cmd_name == "console":
                 port = Prompt.ask("Serial port", default=DEFAULT_PORT)
                 args = ["--port", port]
+            elif cmd_name == "console-ui":
+                import subprocess
+                subprocess.run([sys.executable, sys.argv[0], "console-ui"])
+                continue
             elif cmd_name == "log":
                 port = Prompt.ask("Serial port", default=DEFAULT_PORT)
                 outfile = Prompt.ask("Output log file", default="mochabin.log")
@@ -429,11 +470,11 @@ def _root(
 
 # ---------- Utilities ----------
 
-def find_ports() -> list[serial.tools.list_ports_common.ListPortInfo]:
-    return list(list_ports.comports())
+def find_ports():
+    return list(serial.tools.list_ports.comports())
 
 
-def open_serial(port: str, baud: int = DEFAULT_BAUD, timeout: float = 0.2) -> serial.Serial:
+def open_serial(port: str, baud: int = DEFAULT_BAUD, timeout: float = 0.2):
     ser = serial.Serial(
         port=port,
         baudrate=baud,
@@ -446,7 +487,7 @@ def open_serial(port: str, baud: int = DEFAULT_BAUD, timeout: float = 0.2) -> se
     return ser
 
 
-def expect_spawn(ser: serial.Serial, encoding: str = "utf-8") -> fdpexpect.fdspawn:
+def expect_spawn(ser, encoding: str = "utf-8"):
     child = fdpexpect.fdspawn(ser.fileno(), encoding=encoding, timeout=DEFAULT_TIMEOUT)
     child.logfile_read = None
     return child
@@ -462,8 +503,8 @@ CTRL_MAP = {
 }
 
 
-def normalize_exit_keys(keys: Iterable[str]) -> set[int]:
-    codes: set[int] = set()
+def normalize_exit_keys(keys):
+    codes = set()
     for k in keys:
         k = k.lower().strip()
         if k in CTRL_MAP:
@@ -481,7 +522,7 @@ def cmd_help() -> None:
     show_cheatsheet()
 
 
-def send_serial_break(ser: serial.Serial, duration: float = 0.25) -> None:
+def send_serial_break(ser, duration: float = 0.25):
     """
     Try to send a serial BREAK.
     Works on most USB-serial adapters; falls back to break_condition toggle.
@@ -496,14 +537,14 @@ def send_serial_break(ser: serial.Serial, duration: float = 0.25) -> None:
             ser.break_condition = False
 
 
-def sendline(ser: serial.Serial, line: str) -> None:
+def sendline(ser, line: str):
     if not line.endswith("\n"):
         line = line + "\n"
     ser.write(line.encode("utf-8"))
     ser.flush()
 
 
-def flush_input(ser: serial.Serial) -> None:
+def flush_input(ser):
     try:
         ser.reset_input_buffer()
     except Exception:
@@ -542,7 +583,7 @@ def cmd_console(
     port: str = typer.Option(DEFAULT_PORT, help="Serial device"),
     baud: int = typer.Option(DEFAULT_BAUD, help="Baud rate"),
     log: Optional[Path] = typer.Option(None, help="Log all console output to file"),
-    exit_key: List[str] = typer.Option(
+    exit_key = typer.Option(
         ["ctrl-]", "ctrl-q", "ctrl-x"],
         help="Key(s) to exit console. Supported: ctrl-], ctrl-q, ctrl-x, ctrl-c, esc, or a byte value like 0x1d."
     ),
@@ -556,7 +597,7 @@ def cmd_console(
       x/q = exit, a = send literal prefix, b = BREAK, h = help.
     """
     ser = open_serial(port, baud)
-    exit_codes: Set[int] = normalize_exit_keys(exit_key)
+    exit_codes = normalize_exit_keys(exit_key)
     pretty_keys = ", ".join(exit_key)
     pref_code = next(iter(normalize_exit_keys([prefix_key])), None) if prefix else None
     pref_hint = f", prefix: {prefix_key} (x/q=exit, a=send, b=BREAK, h=help)" if pref_code is not None else ", prefix: disabled"
@@ -663,7 +704,7 @@ def cmd_log(
 
 # ---------- U-Boot helpers ----------
 
-def break_into_uboot(ser: serial.Serial, child: fdpexpect.fdspawn, timeout: int = 7, prompt: str = DEFAULT_PROMPT) -> None:
+def break_into_uboot(ser, child, timeout: int = 7, prompt: str = DEFAULT_PROMPT):
     """
     Stops autoboot and waits for the U-Boot prompt.
     Strategy: spam CRs during countdown; expect prompt.
@@ -685,7 +726,7 @@ def break_into_uboot(ser: serial.Serial, child: fdpexpect.fdspawn, timeout: int 
     console.print("[green]U-Boot prompt detected.[/green]")
 
 
-def run_uboot_lines(child: fdpexpect.fdspawn, cmds: List[str], prompt: str = DEFAULT_PROMPT, echo: bool = True) -> None:
+def run_uboot_lines(child, cmds, prompt: str = DEFAULT_PROMPT, echo: bool = True):
     for line in cmds:
         if not line.strip():
             continue
@@ -695,7 +736,7 @@ def run_uboot_lines(child: fdpexpect.fdspawn, cmds: List[str], prompt: str = DEF
         child.expect(prompt, timeout=DEFAULT_TIMEOUT)
 
 
-def recipe_netboot_debian(server: str, kernel_path: str, initrd_path: str, extra_args: str = "") -> List[str]:
+def recipe_netboot_debian(server: str, kernel_path: str, initrd_path: str, extra_args: str = ""):
     """
     Returns a list of U-Boot commands to TFTP (or HTTP*) boot Debian installer.
     Use http paths (http://server/path) or TFTP paths (just filenames).
@@ -737,7 +778,7 @@ def recipe_netboot_debian(server: str, kernel_path: str, initrd_path: str, extra
     return cmds
 
 
-def recipe_flash_uboot_bubt(image: str, source: str = "usb", target: str = "spi") -> List[str]:
+def recipe_flash_uboot_bubt(image: str, source: str = "usb", target: str = "spi"):
     """
     Use U-Boot's 'bubt' to burn image to SPI from usb/tftp/mmc.
     Example: bubt flash-image.bin spi usb
@@ -751,7 +792,7 @@ def recipe_flash_uboot_bubt(image: str, source: str = "usb", target: str = "spi"
     return pre + [f"bubt {image} {target} {source}"]
 
 
-def recipe_flash_uboot_spi_manual(image_dev: str = "usb 0:1", image_path: str = "flash-image.bin") -> List[str]:
+def recipe_flash_uboot_spi_manual(image_dev: str = "usb 0:1", image_path: str = "flash-image.bin"):
     """
     Manual SPI flash procedure using fatload + sf.
     Adjust sizes/offsets for your image if needed.
@@ -791,7 +832,7 @@ def cmd_run(
     baud: int = typer.Option(DEFAULT_BAUD),
     script: Optional[Path] = typer.Option(None, help="Text file of U-Boot commands to run"),
     recipe: Optional[str] = typer.Option(None, help="Built-in: netboot-debian | flash-bubt | flash-spi-manual | env-dump | env-save | reset"),
-    args: List[str] = typer.Argument(None, help="Extra args for recipe"),
+    args = typer.Argument(None, help="Extra args for recipe"),
     prompt: str = typer.Option(DEFAULT_PROMPT, help="Regex for the U-Boot prompt"),
     break_first: bool = typer.Option(True, help="Attempt to stop autoboot first"),
 ) -> None:
@@ -808,7 +849,7 @@ def cmd_run(
         if break_first:
             break_into_uboot(ser, child, prompt=prompt)
 
-        cmds: List[str] = []
+        cmds = []
         if script:
             cmds = [ln.rstrip() for ln in script.read_text().splitlines()]
         else:
