@@ -316,7 +316,7 @@ def launch_gui(
             self.dump_pho_var = tk.StringVar()
             self.ignore_errors_var = tk.BooleanVar(value=True)
             self.play_after_var = tk.BooleanVar(value=False)
-            self.status_var = tk.StringVar(value="Ready.")
+            self.status_var = tk.StringVar(value="Ready to create audio.")
             self.last_output: Optional[str] = None
 
         def _configure_style(self) -> None:
@@ -359,7 +359,13 @@ def launch_gui(
             style.configure("TCheckbutton", background=card_bg, font=("SF Pro Text", 12))
             style.configure("TEntry", padding=6)
             style.configure("TNotebook", background=card_bg, padding=0)
-            style.configure("TNotebook.Tab", padding=(16, 8), font=("SF Pro Text", 12))
+            style.configure("TNotebook.Tab", padding=(16, 8), font=("SF Pro Text", 12), background=surface_bg)
+            style.map("TNotebook.Tab",
+                       background=[("selected", card_bg), ("!selected", surface_bg)],
+                       foreground=[("selected", "#1c1c1e"), ("!selected", "#636366")])
+
+            self.surface_bg = surface_bg
+            self.card_bg = card_bg
 
         def _build_layout(self) -> None:
             container = ttk.Frame(self, padding=24, style="Surface.TFrame")
@@ -417,7 +423,14 @@ def launch_gui(
             self.text_widget.grid(row=1, column=0, sticky="nsew")
             text_scroll = ttk.Scrollbar(text_tab, orient="vertical", command=self.text_widget.yview)
             text_scroll.grid(row=1, column=1, sticky="ns")
-            self.text_widget.configure(yscrollcommand=text_scroll.set)
+            self.text_widget.configure(
+                yscrollcommand=text_scroll.set,
+                background=self.card_bg,
+                relief="flat",
+                highlightthickness=0,
+                borderwidth=0,
+                insertbackground="#1c1c1e",
+            )
 
             text_form = ttk.Frame(text_tab, style="CardInner.TFrame")
             text_form.grid(row=2, column=0, sticky="ew", pady=(12, 0))
@@ -551,7 +564,10 @@ def launch_gui(
             state = "disabled" if running else "normal"
             self.synth_btn.configure(state=state)
             self.play_btn.configure(state=("disabled" if running or not self.last_output else "normal"))
-            self.status_var.set("Synthesizing..." if running else self.status_var.get())
+            if running:
+                self.status_var.set("Synthesizing...")
+            elif not self.last_output:
+                self.status_var.set("Ready to create audio.")
 
         def _on_tab_change(self, _event=None) -> None:
             current = self.input_notebook.nametowidget(self.input_notebook.select())
@@ -591,17 +607,16 @@ def launch_gui(
             mode = self.mode_var.get()
 
             if not voice:
-                messagebox.showerror("Missing voice", "Please select a MBROLA voice path.")
+                messagebox.showerror("Add a voice", "Choose a MBROLA voice to continue.")
                 return
             if not out_path:
-                messagebox.showerror("Missing output", "Please choose an output file path.")
+                messagebox.showerror("Choose a destination", "Pick where you'd like the audio to be saved.")
                 return
 
             espeak_voice = self.espeak_voice_var.get().strip()
             espeak_bin = self.espeak_bin_var.get().strip() or None
             espeak_args_raw = self.espeak_args_var.get().strip()
-            espeak_args: Optional[Sequence[str]]
-            espeak_args = shlex.split(espeak_args_raw) if espeak_args_raw else None
+            espeak_args: Optional[Sequence[str]] = shlex.split(espeak_args_raw) if espeak_args_raw else None
 
             dump_pho = self.dump_pho_var.get().strip() or None
             comment_char = self.comment_char_var.get().strip() or None
@@ -613,7 +628,7 @@ def launch_gui(
                 time_ratio = self._safe_float(self.time_ratio_var.get())
                 freq_ratio = self._safe_float(self.freq_ratio_var.get())
             except MBROLAError as exc:
-                messagebox.showerror("Invalid numeric value", str(exc))
+                messagebox.showerror("Check the numbers", f"{exc}. Try a plain number like 1.2")
                 return
 
             payload = {
@@ -636,16 +651,16 @@ def launch_gui(
             if mode == "text":
                 text_value = self.text_widget.get("1.0", tk.END).strip()
                 if not text_value:
-                    messagebox.showerror("Missing text", "Enter text to synthesize or switch to .pho mode.")
+                    messagebox.showerror("Add some text", "Type a phrase to render or switch to the phoneme tab.")
                     return
                 if not espeak_voice:
-                    messagebox.showerror("Missing eSpeak voice", "Specify an eSpeak voice (e.g. mb-en1).")
+                    messagebox.showerror("Pick an eSpeak voice", "Use a voice such as mb-en1 so MBROLA knows how to speak it.")
                     return
                 payload["text"] = text_value
             elif mode == "pho":
                 pho_path = self.pho_path_var.get().strip()
                 if not pho_path:
-                    messagebox.showerror("Missing .pho file", "Select a phoneme (.pho) file to synthesize.")
+                    messagebox.showerror("Select a phoneme file", "Choose the .pho file you'd like MBROLA to render.")
                     return
                 payload["pho_path"] = pho_path
             else:  # demo
@@ -724,31 +739,31 @@ def launch_gui(
             if kind == "success":
                 _, out_path, play_after, play_result = message
                 self.last_output = str(out_path)
-                self.status_var.set(f"Wrote: {out_path}")
+                self.status_var.set(f"Saved to {out_path}")
                 self._set_running(False)
-                messagebox.showinfo("Success", f"Wrote: {out_path}")
+                messagebox.showinfo("Audio exported", f"Saved to {out_path}")
                 if play_after and play_result is False:
                     messagebox.showwarning(
-                        "Playback failed",
-                        "Audio file generated but playback failed. Install ffplay/aplay/paplay/afplay or SoX 'play'.",
+                        "Playback unavailable",
+                        "The file is ready, but playback wasn't possible. Install ffplay/aplay/paplay/afplay or SoX 'play' to preview inside the app.",
                     )
             else:
                 _, error_msg = message
                 self.status_var.set(f"Error: {error_msg}")
                 self._set_running(False)
-                messagebox.showerror("MBROLA error", error_msg)
+                messagebox.showerror("Couldn't complete the render", error_msg)
 
             self.after(150, self._poll_queue)
 
         def _play_latest(self) -> None:
             if not self.last_output:
-                messagebox.showinfo("No audio", "No audio has been generated yet.")
+                messagebox.showinfo("Nothing to play yet", "Render an export first, then try playing it from here.")
                 return
             ok = play_audio(self.last_output)
             if not ok:
                 messagebox.showwarning(
-                    "Playback failed",
-                    "Could not play audio. Install ffplay/aplay/paplay/afplay or SoX 'play'.",
+                    "Playback unavailable",
+                    "The file is ready, but playback wasn't possible. Install ffplay/aplay/paplay/afplay or SoX 'play' to preview inside the app.",
                 )
 
     app = MBROLAGUI()
