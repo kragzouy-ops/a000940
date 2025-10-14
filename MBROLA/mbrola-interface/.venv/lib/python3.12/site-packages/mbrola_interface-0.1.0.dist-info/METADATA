@@ -1,0 +1,43 @@
+Metadata-Version: 2.4
+Name: mbrola-interface
+Version: 0.1.0
+Summary: Thin Python wrapper around the MBROLA binary + eSpeak-NG .pho generation
+Author: Your Name
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Topic :: Multimedia :: Sound/Audio :: Speech
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Dynamic: license-file
+
+# mbrola-interface
+
+A tiny Python wrapper for [MBROLA] with optional text→`.pho` using eSpeak-NG.
+
+## Install (from source)
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+pip install --upgrade pip
+pip install .
+```
+
+## CLI Usage
+
+```bash
+mbrola-interface --voice /usr/share/mbrola/en1/en1 --demo --out demo.wav --play
+```
+
+Or from text:
+
+```bash
+mbrola-interface --voice /usr/share/mbrola/en1/en1   --text "Hello from MBROLA" --espeak-voice mb-en1   --out hello.wav --dump-pho hello.pho
+```
+
+## Requirements
+- `mbrola` installed + at least one voice (e.g., `mbrola-en1`, `mbrola-fr1`)
+- `espeak-ng` (for text→`.pho`)
+
+[MBROLA]: https://github.com/numediart/MBROLA (binary distribution site varies by distro)

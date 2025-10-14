@@ -1,84 +1,5 @@
 #!/usr/bin/env python3
-<<<<<<< HEAD
 # -*- coding: utf-8 -*-
-
-# --- Preinit: venv check, requirements install, and self-restart ---
-def _preinit():
-    import subprocess
-    import shutil
-    import pathlib
-    import sys
-    import os
-    VENV_PATH = os.path.join(os.path.dirname(__file__), '.venv')
-    REQUIREMENTS = ['typer[all]', 'rich', 'pyserial', 'pexpect']
-    REDUNDANCY_ENV = 'MOCHABIN_TOOL_BOOTSTRAPPED'
-    # Only run if not already bootstrapped
-    if os.environ.get(REDUNDANCY_ENV) == '1':
-        return
-    # Check if running inside venv
-    in_venv = sys.prefix != sys.base_prefix or hasattr(sys, 'real_prefix')
-    if not in_venv:
-        # Create venv if missing
-        if not os.path.isdir(VENV_PATH):
-            subprocess.check_call([sys.executable, '-m', 'venv', VENV_PATH])
-        # Re-exec inside venv
-        pybin = os.path.join(VENV_PATH, 'bin', 'python')
-        os.environ[REDUNDANCY_ENV] = '1'
-        os.execv(pybin, [pybin] + sys.argv)
-    # In venv: check requirements
-    try:
-        import typer, rich, serial, pexpect
-    except ImportError:
-        # Install requirements
-        pip = sys.executable
-        subprocess.check_call([pip, '-m', 'pip', 'install'] + REQUIREMENTS)
-        # Re-exec to reload modules
-        os.environ[REDUNDANCY_ENV] = '1'
-        os.execv(sys.executable, [sys.executable] + sys.argv)
-
-# Only run preinit if not imported as a module
-if __name__ == "__main__":
-    _preinit()
-
-
-# --- Preinit: venv check, requirements install, and self-restart ---
-def _preinit():
-    import subprocess
-    import shutil
-    import pathlib
-    import sys
-    import os
-    VENV_PATH = os.path.join(os.path.dirname(__file__), '.venv')
-    REQUIREMENTS = ['typer[all]', 'rich', 'pyserial', 'pexpect']
-    REDUNDANCY_ENV = 'MOCHABIN_TOOL_BOOTSTRAPPED'
-    # Only run if not already bootstrapped
-    if os.environ.get(REDUNDANCY_ENV) == '1':
-        return
-    # Check if running inside venv
-    in_venv = sys.prefix != sys.base_prefix or hasattr(sys, 'real_prefix')
-    if not in_venv:
-        # Create venv if missing
-        if not os.path.isdir(VENV_PATH):
-            subprocess.check_call([sys.executable, '-m', 'venv', VENV_PATH])
-        # Re-exec inside venv
-        pybin = os.path.join(VENV_PATH, 'bin', 'python')
-        os.environ[REDUNDANCY_ENV] = '1'
-        os.execv(pybin, [pybin] + sys.argv)
-    # In venv: check requirements
-    try:
-        import typer, rich, serial, pexpect
-    except ImportError:
-        # Install requirements
-        pip = sys.executable
-        subprocess.check_call([pip, '-m', 'pip', 'install'] + REQUIREMENTS)
-        # Re-exec to reload modules
-        os.environ[REDUNDANCY_ENV] = '1'
-        os.execv(sys.executable, [sys.executable] + sys.argv)
-
-# Only run preinit if not imported as a module
-if __name__ == "__main__":
-    _preinit()
-
 import os
 import sys
 import typer
@@ -105,7 +26,7 @@ except ImportError:
     serial = None
 
 DEFAULT_PROMPT = r"=> "
-DEFAULT_TIMEOUT = 7
+DEFAULT_TIMEOUT = 30
 
 import time
 from typing import Optional, Iterable
@@ -122,6 +43,83 @@ DEFAULT_BAUD = 115200
 
 app = typer.Typer()
 console = Console()
+
+# --- Preinit: venv check, requirements install, and self-restart ---
+def _preinit():
+    import subprocess
+    import shutil
+    import pathlib
+    import sys
+    import os
+    VENV_PATH = os.path.join(os.path.dirname(__file__), '.venv')
+    REQUIREMENTS = ['typer[all]', 'rich', 'pyserial', 'pexpect']
+    REDUNDANCY_ENV = 'MOCHABIN_TOOL_BOOTSTRAPPED'
+    # Only run if not already bootstrapped
+    if os.environ.get(REDUNDANCY_ENV) == '1':
+        return
+    # Check if running inside venv
+    in_venv = sys.prefix != sys.base_prefix or hasattr(sys, 'real_prefix')
+    if not in_venv:
+        # Create venv if missing
+        if not os.path.isdir(VENV_PATH):
+            subprocess.check_call([sys.executable, '-m', 'venv', VENV_PATH])
+        # Re-exec inside venv
+        pybin = os.path.join(VENV_PATH, 'bin', 'python')
+        os.environ[REDUNDANCY_ENV] = '1'
+        os.execv(pybin, [pybin] + sys.argv)
+    # In venv: check requirements
+    try:
+        import typer, rich, serial, pexpect
+    except ImportError:
+        # Install requirements
+        pip = sys.executable
+        subprocess.check_call([pip, '-m', 'pip', 'install'] + REQUIREMENTS)
+        # Re-exec to reload modules
+        os.environ[REDUNDANCY_ENV] = '1'
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+
+# Only run preinit if not imported as a module
+if __name__ == "__main__":
+    _preinit()
+
+
+# --- Preinit: venv check, requirements install, and self-restart ---
+def _preinit():
+    import subprocess
+    import shutil
+    import pathlib
+    import sys
+    import os
+    VENV_PATH = os.path.join(os.path.dirname(__file__), '.venv')
+    REQUIREMENTS = ['typer[all]', 'rich', 'pyserial', 'pexpect']
+    REDUNDANCY_ENV = 'MOCHABIN_TOOL_BOOTSTRAPPED'
+    # Only run if not already bootstrapped
+    if os.environ.get(REDUNDANCY_ENV) == '1':
+        return
+    # Check if running inside venv
+    in_venv = sys.prefix != sys.base_prefix or hasattr(sys, 'real_prefix')
+    if not in_venv:
+        # Create venv if missing
+        if not os.path.isdir(VENV_PATH):
+            subprocess.check_call([sys.executable, '-m', 'venv', VENV_PATH])
+        # Re-exec inside venv
+        pybin = os.path.join(VENV_PATH, 'bin', 'python')
+        os.environ[REDUNDANCY_ENV] = '1'
+        os.execv(pybin, [pybin] + sys.argv)
+    # In venv: check requirements
+    try:
+        import typer, rich, serial, pexpect
+    except ImportError:
+        # Install requirements
+        pip = sys.executable
+        subprocess.check_call([pip, '-m', 'pip', 'install'] + REQUIREMENTS)
+        # Re-exec to reload modules
+        os.environ[REDUNDANCY_ENV] = '1'
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+
+# Only run preinit if not imported as a module
+if __name__ == "__main__":
+    _preinit()
 
 @app.command("console-ui")
 def cmd_console_ui():
@@ -152,24 +150,6 @@ def cmd_console_ui():
     console_text = Text.from_markup("[dim]Interactive console will appear here when supported.[/dim]")
     status_text = Text.from_markup("")
     menu_conn_info = {"info": None}
-
-    def render_menu(selected_idx):
-        title = "[cyan]Select a Command (Up/Down, Enter, +/-, q to quit)"
-        if menu_conn_info["info"]:
-            title = f"[green]{menu_conn_info['info']}[/green]"
-        menu_panel = Panel(
-            Align.left(
-                "\n".join([
-                    (f"> [bold green]{cmd}[reset] - {desc}" if i == selected_idx else f"  [green]{cmd}[/green] - {desc}")
-                    for i, (cmd, desc) in enumerate(commands)
-                ]),
-                vertical="top"
-            ),
-            title=title,
-            border_style="cyan"
-        )
-        return menu_panel
-
     import sys, termios, tty, select
     selected = 0
     with Live(layout, refresh_per_second=10, screen=True) as live:
@@ -210,29 +190,15 @@ def cmd_console_ui():
                 if rlist:
                     ch = sys.stdin.read(1)
                     if ch == "\x1b":
+                        # Possible escape sequence (arrow keys, etc.)
                         seq = sys.stdin.read(2)
                         if seq == "[A":
                             selected = (selected - 1) % len(commands)
                         elif seq == "[B":
                             selected = (selected + 1) % len(commands)
-                    elif ch == '+':
-                        output_height += 1
-                        layout["output"].size = output_height
-                    elif ch == '-':
-                        if output_height > 3:
-                            output_height -= 1
-                            layout["output"].size = output_height
-                    elif ch == '[':
-                        if output_idx > 0:
-                            output_idx -= 1
-                    elif ch == ']':
-                        if output_idx < len(output_buffers) - 1:
-                            output_idx += 1
-                    elif ch == '\u001b[5~':
-                        output_scrolls[output_idx] = max(0, output_scrolls[output_idx] - visible_lines)
-                    elif ch == '\u001b[6~':
-                        output_scrolls[output_idx] = min(max_scroll, output_scrolls[output_idx] + visible_lines)
-                    elif ch == '\n':
+                        # Optionally handle left/right or other keys here
+                    elif ch in ('\r', '\n'):
+                        # Enter key (handle both CR and LF)
                         cmd_name = commands[selected][0]
                         args = []
                         if cmd_name == "console":
@@ -374,7 +340,6 @@ def cmd_menu():
             return
 
 
-=======
 ##FIRST RETRYBORNABLE
 
 from rich.console import Console
@@ -500,7 +465,6 @@ def cmd_console_ui():
                     status_text = f"[red]Error running {name}: {e}[/red]"
             else:
                 status_text = "[yellow]Unknown key. Use up/down/enter/q.[/yellow]"
->>>>>>> 97d18a6 (stillko)
 
 # ---------- Help / Cheatsheet ----------
 

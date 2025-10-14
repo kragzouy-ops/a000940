@@ -1,0 +1,121 @@
+(kicad_sch (version 20211014) (generator "ChatGPT")
+  (paper "A4")
+  (title_block
+    (title "HAT-shaped mikroBUS Adapter (Board B)")
+    (date "2025-10-14")
+    (rev "A0")
+    (company "Starter skeleton")
+    (comment 1 "Two mikroBUS sockets + ADC on AN (I2C)")
+    (comment 2 "Down-facing 40-pin male to Board A")
+  )
+
+  ; Down-facing 40-pin header from Board A
+  (symbol (lib_id "Connector_Generic:Conn_02x20_Odd_Even") (at 60 100 0) (unit 1)
+    (in_bom yes) (on_board yes) (uuid 7e4aff0f-49b0-4411-bc10-2637a0200ade)
+    (property "Reference" "J1" (at 60 75 0))
+    (property "Value" "RPi_40pin_DownHeader" (at 60 125 0))
+    (property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_2x20_P2.54mm_Vertical" (at 60 130 0))
+  )
+
+  ; mikroBUS Socket 1 (Left + Right 1x8)
+  (symbol (lib_id "Connector_Generic:Conn_01x08") (at 150 70 0) (unit 1)
+    (in_bom yes) (on_board yes) (uuid cfd1c467-a1bd-4b17-ab1d-0c79c7c83cce)
+    (property "Reference" "J2" (at 150 55 0))
+    (property "Value" "mikroBUS1_LEFT (AN RST CS SCK MISO MOSI 3V3 GND)" (at 150 85 0))
+    (property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x08_P2.54mm_Vertical" (at 150 90 0))
+  )
+  (symbol (lib_id "Connector_Generic:Conn_01x08") (at 180 70 0) (unit 1)
+    (in_bom yes) (on_board yes) (uuid ef7805b7-4b4c-43c2-9301-2ba45c3259f1)
+    (property "Reference" "J3" (at 180 55 0))
+    (property "Value" "mikroBUS1_RIGHT (PWM INT RX TX SCL SDA 5V GND)" (at 180 85 0))
+    (property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x08_P2.54mm_Vertical" (at 180 90 0))
+  )
+
+  ; mikroBUS Socket 2 (Left + Right 1x8)
+  (symbol (lib_id "Connector_Generic:Conn_01x08") (at 150 120 0) (unit 1)
+    (in_bom yes) (on_board yes) (uuid b1f65c35-40b3-4c39-98e4-3bf4c81b80f2)
+    (property "Reference" "J4" (at 150 105 0))
+    (property "Value" "mikroBUS2_LEFT (AN RST CS SCK MISO MOSI 3V3 GND)" (at 150 135 0))
+    (property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x08_P2.54mm_Vertical" (at 150 140 0))
+  )
+  (symbol (lib_id "Connector_Generic:Conn_01x08") (at 180 120 0) (unit 1)
+    (in_bom yes) (on_board yes) (uuid b3cdfca9-f34e-4843-90eb-163e8f77aae3)
+    (property "Reference" "J5" (at 180 105 0))
+    (property "Value" "mikroBUS2_RIGHT (PWM INT RX TX SCL SDA 5V GND)" (at 180 135 0))
+    (property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x08_P2.54mm_Vertical" (at 180 140 0))
+  )
+
+  ; Notes box
+  (text "Route AN1/AN2 to I2C ADC (ADS1015 @0x48).\nPlace solder jumpers for CS, UART share, PWM swap, INT/RST map as per README." (at 120 155 0))
+
+  ; Mapping summary
+  (text "Header→Sockets defaults: CE0→S1 CS, CE1→S2 CS, PWM0→S1 PWM, PWM1→S2 PWM,\nINT: GPIO25→S1, GPIO24→S2, RST: GPIO22→S1, GPIO27→S2, I2C on GPIO2/3." (at 120 165 0
+  ; Labels for header J1 side
+  (wire (pts (xy 55 100) (xy 50 100)))
+  (label "3V3" (at 48 100 0))
+  (wire (pts (xy 55 102) (xy 50 102)))
+  (label "5V" (at 48 102 0))
+  (wire (pts (xy 55 104) (xy 50 104)))
+  (label "GND" (at 48 104 0))
+
+  (wire (pts (xy 65 95) (xy 70 95)))
+  (label "I2C_SDA" (at 72 95 0))
+  (wire (pts (xy 65 93) (xy 70 93)))
+  (label "I2C_SCL" (at 72 93 0))
+
+  (wire (pts (xy 65 91) (xy 70 91)))
+  (label "SPI_MOSI" (at 72 91 0))
+  (wire (pts (xy 65 89) (xy 70 89)))
+  (label "SPI_MISO" (at 72 89 0))
+  (wire (pts (xy 65 87) (xy 70 87)))
+  (label "SPI_SCK" (at 72 87 0))
+  (wire (pts (xy 65 85) (xy 70 85)))
+  (label "SPI_CS0" (at 72 85 0))
+  (wire (pts (xy 65 83) (xy 70 83)))
+  (label "SPI_CS1" (at 72 83 0))
+
+  (wire (pts (xy 65 81) (xy 70 81)))
+  (label "UART_TX" (at 72 81 0))
+  (wire (pts (xy 65 79) (xy 70 79)))
+  (label "UART_RX" (at 72 79 0))
+
+  (wire (pts (xy 65 77) (xy 70 77)))
+  (label "PWM0" (at 72 77 0))
+  (wire (pts (xy 65 75) (xy 70 75)))
+  (label "PWM1" (at 72 75 0))
+
+  (wire (pts (xy 65 73) (xy 70 73)))
+  (label "INT1" (at 72 73 0))
+  (wire (pts (xy 65 71) (xy 70 71)))
+  (label "INT2" (at 72 71 0))
+  (wire (pts (xy 65 69) (xy 70 69)))
+  (label "RST1" (at 72 69 0))
+  (wire (pts (xy 65 67) (xy 70 67)))
+  (label "RST2" (at 72 67 0))
+
+  ; ADC placement reminder and labels for AN nets
+  (symbol (lib_id "ADC_I2C:ADS1015") (at 120 110 0) (unit 1)
+    (in_bom yes) (on_board yes) (uuid 23652921-736f-4308-b960-e0e2e8c0689b)
+    (property "Reference" "U10" (at 120 95 0))
+    (property "Value" "ADS1015" (at 120 125 0))
+  )
+  (wire (pts (xy 108 115.5) (xy 100 115.5))) ; SCL
+  (label "I2C_SCL" (at 98 115.5 0))
+  (wire (pts (xy 108 113) (xy 100 113))) ; SDA
+  (label "I2C_SDA" (at 98 113 0))
+  (wire (pts (xy 132 115.5) (xy 140 115.5))) ; ALERT
+  (label "ADC_ALERT" (at 142 115.5 0))
+  (wire (pts (xy 132 109) (xy 140 109))) ; ADDR
+  (label "GND" (at 142 109 0))
+  (wire (pts (xy 108 118) (xy 100 118)))
+  (label "3V3" (at 98 118 0))
+  (wire (pts (xy 108 105.5) (xy 100 105.5)))
+  (label "GND" (at 98 105.5 0))
+
+  (wire (pts (xy 108 113.5) (xy 90 113.5)))
+  (label "AN1" (at 88 113.5 0))
+  (wire (pts (xy 108 111) (xy 90 111)))
+  (label "AN2" (at 88 111 0
+  (text "SJ map: SJ_CS1→route CE0 to Socket1 CS; SJ_CS2→CE1 to Socket2 CS; SJ_UART2→tie S2 RX/TX to same UART as S1; SJ_PWM_SWAP swaps PWM0/PWM1; SJ_INT_MAP/SJ_RST_MAP allow alternate GPIOs." (at 120 170 0))
+
+)

@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mbrola-interface"
+version = "0.1.0"
+description = "Thin Python wrapper around the MBROLA binary + eSpeak-NG .pho generation"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [{name = "Your Name"}]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Multimedia :: Sound/Audio :: Speech",
+]
+
+[project.scripts]
+mbrola-interface = "mbrola_interface:main"

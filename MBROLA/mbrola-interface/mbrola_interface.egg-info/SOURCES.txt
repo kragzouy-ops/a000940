@@ -1,0 +1,9 @@
+LICENSE
+README.md
+mbrola_interface.py
+pyproject.toml
+mbrola_interface.egg-info/PKG-INFO
+mbrola_interface.egg-info/SOURCES.txt
+mbrola_interface.egg-info/dependency_links.txt
+mbrola_interface.egg-info/entry_points.txt
+mbrola_interface.egg-info/top_level.txt

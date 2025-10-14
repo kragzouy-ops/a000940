@@ -1,0 +1,4 @@
+{
+    "terminal.integrated.suggest.enabled": true,
+    "chat.tools.terminal.shellIntegrationTimeout": 0
+}
